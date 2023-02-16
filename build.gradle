@@ -6,7 +6,7 @@ plugins {
     id 'edu.wpi.first.WpilibTools' version '1.1.0'
 }
 
-mainClassName = 'Program'
+mainClassName = 'LiftArmDisplay'
 
 wpilibTools.deps.wpilibVersion = wpi.versions.wpilibVersion.get()
 
