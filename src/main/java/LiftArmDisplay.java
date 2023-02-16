@@ -62,15 +62,16 @@ public class LiftArmDisplay implements Runnable
         {
             Graphics2D g2 = (Graphics2D) g;
             Rectangle bounds = getBounds();
+            g2.clearRect(0, 0, bounds.width, bounds.height);
 
             int base_x = bounds.width / 6;
             int base_y = bounds.height;
 
             // Scaling from robot to screen
-            double pixel_per_meter = Math.min(bounds.width, bounds.height) / 3.0;
+            double pixel_per_meter = Math.max(bounds.width, bounds.height) / 2.0;
 
             double lift_angle = Math.toRadians(60.0);
-            double lift_length = 1.5 + lift_extension;
+            double lift_length = 0.8 + lift_extension;
             int lift_top_x = base_x + (int) (lift_length * Math.cos(lift_angle) * pixel_per_meter);
             int lift_top_y = base_y - (int) (lift_length * Math.sin(lift_angle) * pixel_per_meter);
 
@@ -78,7 +79,7 @@ public class LiftArmDisplay implements Runnable
             g2.setStroke(new BasicStroke(10));
             g.drawLine(base_x, base_y, lift_top_x, lift_top_y);
 
-            double arm_length = arm_extended ? 0.8 : 0.4;
+            double arm_length = arm_extended ? 0.5 : 0.3;
             int arm_x = lift_top_x + (int) (Math.cos(Math.toRadians(arm_angle)) * arm_length * pixel_per_meter);
             int arm_y = lift_top_y - (int) (Math.sin(Math.toRadians(arm_angle)) * arm_length * pixel_per_meter);
 
