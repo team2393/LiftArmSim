@@ -75,7 +75,7 @@ public class LiftArmDisplay implements Runnable
 
             // Scaling from robot to screen
             int base_x = bounds.width / 6;
-            int base_y = bounds.height;
+            int base_y = bounds.height-5;
             double pixel_per_meter = Math.max(bounds.width, bounds.height) / 2.0;
 
             // Draw Lift
@@ -86,14 +86,15 @@ public class LiftArmDisplay implements Runnable
             int lift_top_y = base_y - (int) (lift_length * Math.sin(lift_angle) * pixel_per_meter);
             g2.setColor(Color.BLUE);
             g2.setStroke(new BasicStroke(10));
+            g.drawLine(0, base_y, robot_edge, base_y);
             g.drawLine(base_x, base_y, lift_top_x, lift_top_y);
 
             // Draw Intake
             double intake_length = 0.2;
-            int intake_x = robot_edge    + (int) (Math.cos(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
-            int intake_y = bounds.height - (int) (Math.sin(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
+            int intake_x = robot_edge + (int) (Math.cos(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
+            int intake_y = base_y     - (int) (Math.sin(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
             g2.setColor(Color.GREEN);
-            g.drawLine(robot_edge, bounds.height, intake_x, intake_y);
+            g.drawLine(robot_edge, base_y, intake_x, intake_y);
 
             // Draw Arm at end of Lift
             double arm_length = arm_extended ? 0.5 : 0.3;
@@ -104,7 +105,7 @@ public class LiftArmDisplay implements Runnable
 
             // Draw Grabber at end of Arm
             double grab_size = 0.15 * pixel_per_meter;
-            g2.setColor(Color.YELLOW);
+            g2.setColor(Color.ORANGE);
             g.drawLine(arm_x, arm_y,
                        (int) (arm_x + rotate_x(grab_size, -grab_size/2, -arm_angle)),
                        (int) (arm_y + rotate_y(grab_size, -grab_size/2, -arm_angle)));
@@ -116,22 +117,23 @@ public class LiftArmDisplay implements Runnable
             if (intake_angle > 90.0)
             {
                 g2.setColor(Color.DARK_GRAY);
+                int node_start = robot_edge + 10;
                 int node_width = (int)(0.25 * pixel_per_meter);
                 int level1 = (int)(0.25 * pixel_per_meter);
                 int level2 = (int)(0.50 * pixel_per_meter);
                 // Floor node
-                g.drawRect(robot_edge, bounds.height-2, node_width, 2);
+                g.drawRect(node_start, bounds.height-2, node_width, 2);
                 // Mid node
-                g.drawRect(robot_edge + node_width, bounds.height-level1, node_width, level1);
+                g.drawRect(node_start + node_width, bounds.height-level1, node_width, level1);
                 // Upper/far node
-                g.drawRect(robot_edge + 2*node_width, bounds.height-level2, node_width, level2);
+                g.drawRect(node_start + 2*node_width, bounds.height-level2, node_width, level2);
     
                 // Rods sticking out of mid and far node
                 g2.setColor(Color.GRAY);
                 int rod_height = node_width;
-                int rod_x = robot_edge + node_width + node_width/2;
+                int rod_x = node_start + node_width + node_width/2;
                 g2.drawLine(rod_x, bounds.height-level1, rod_x, bounds.height-level1-rod_height);
-                rod_x = robot_edge + 2*node_width + node_width/2;
+                rod_x = node_start + 2*node_width + node_width/2;
                 g2.drawLine(rod_x, bounds.height-level2, rod_x, bounds.height-level2-rod_height);
             }
         }
