@@ -24,7 +24,7 @@ import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.WPIMathJNI;
 import edu.wpi.first.util.WPIUtilJNI;
 
-/** Basic display if lift and arm
+/** Basic display of lift and arm
  *
  *  Listens to network table for lift and arm settings,
  *  be it simulated or real robot,
@@ -32,11 +32,13 @@ import edu.wpi.first.util.WPIUtilJNI;
  */
 public class LiftArmDisplay implements Runnable
 {
+    // JPanel for our custom graphics
     private static class RobotDisplay extends JPanel
     {
         private double lift_extension = 0.0, arm_angle = -90.0, intake_angle = 90.0;
         private boolean arm_extended = false;
 
+        // Set lift etc. and request redraw
         public void set(double lift_extension, double arm_angle,  boolean arm_extended, double intake_angle)
         {
             this.lift_extension = lift_extension;
@@ -46,12 +48,14 @@ public class LiftArmDisplay implements Runnable
             repaint();
         }
 
+        // helper for rotating (x, y) by angle, getting the new x
         private static double rotate_x(double x, double y, double angle)
         {
             double rad = Math.toRadians(angle);
             return x * Math.cos(rad) - y * Math.sin(rad);
         }
 
+        // helper for rotating (x, y) by angle, getting the new y
         private static double rotate_y(double x, double y, double angle)
         {
             double rad = Math.toRadians(angle);
@@ -61,16 +65,20 @@ public class LiftArmDisplay implements Runnable
         @Override
         protected void paintComponent(Graphics g)
         {
+            // Long ago, AWT actually used Graphics2D, but API still passes Graphics
             Graphics2D g2 = (Graphics2D) g;
+
+            // How large is the panel?
             Rectangle bounds = getBounds();
+            // Clear everything
             g2.clearRect(0, 0, bounds.width, bounds.height);
 
+            // Scaling from robot to screen
             int base_x = bounds.width / 6;
             int base_y = bounds.height;
-
-            // Scaling from robot to screen
             double pixel_per_meter = Math.max(bounds.width, bounds.height) / 2.0;
 
+            // Draw Lift
             double lift_angle = Math.toRadians(60.0);
             double lift_length = 0.8 + lift_extension;
             int robot_edge = base_x + (int) (0.8 * Math.cos(lift_angle) * pixel_per_meter);
@@ -80,18 +88,21 @@ public class LiftArmDisplay implements Runnable
             g2.setStroke(new BasicStroke(10));
             g.drawLine(base_x, base_y, lift_top_x, lift_top_y);
 
+            // Draw Intake
             double intake_length = 0.2;
             int intake_x = robot_edge    + (int) (Math.cos(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
             int intake_y = bounds.height - (int) (Math.sin(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
             g2.setColor(Color.GREEN);
             g.drawLine(robot_edge, bounds.height, intake_x, intake_y);
 
+            // Draw Arm at end of Lift
             double arm_length = arm_extended ? 0.5 : 0.3;
             int arm_x = lift_top_x + (int) (Math.cos(Math.toRadians(arm_angle)) * arm_length * pixel_per_meter);
             int arm_y = lift_top_y - (int) (Math.sin(Math.toRadians(arm_angle)) * arm_length * pixel_per_meter);
             g2.setColor(Color.RED);
             g.drawLine(lift_top_x, lift_top_y, arm_x, arm_y);
 
+            // Draw Grabber at end of Arm
             double grab_size = 0.15 * pixel_per_meter;
             g2.setColor(Color.YELLOW);
             g.drawLine(arm_x, arm_y,
@@ -101,16 +112,21 @@ public class LiftArmDisplay implements Runnable
                        (int) (arm_x + rotate_x(grab_size, +grab_size/2, -arm_angle)),
                        (int) (arm_y + rotate_y(grab_size, +grab_size/2, -arm_angle)));
 
+            // If intake is out front, pretend we're in front of nodes so draw those
             if (intake_angle > 90.0)
             {
                 g2.setColor(Color.DARK_GRAY);
                 int node_width = (int)(0.25 * pixel_per_meter);
                 int level1 = (int)(0.25 * pixel_per_meter);
                 int level2 = (int)(0.50 * pixel_per_meter);
+                // Floor node
                 g.drawRect(robot_edge, bounds.height-2, node_width, 2);
+                // Mid node
                 g.drawRect(robot_edge + node_width, bounds.height-level1, node_width, level1);
+                // Upper/far node
                 g.drawRect(robot_edge + 2*node_width, bounds.height-level2, node_width, level2);
     
+                // Rods sticking out of mid and far node
                 g2.setColor(Color.GRAY);
                 int rod_height = node_width;
                 int rod_x = robot_edge + node_width + node_width/2;
@@ -157,9 +173,8 @@ public class LiftArmDisplay implements Runnable
                 double arm = nt_arm.get();
                 boolean extended = nt_ext.get();
                 double intake = nt_intake.get();
-                // System.out.println("Lift: " + lift + " Arm: " + arm);
 
-                // Must update on UI thread
+                // Must update display on UI thread
                 SwingUtilities.invokeAndWait(() ->
                 {
                     info.setText(String.format("Lift: %5.2f m, Arm %s at %4.1f deg, Intake at %4.1f deg",
@@ -177,10 +192,9 @@ public class LiftArmDisplay implements Runnable
         }
     }
 
-
     public static void main(String[] args) throws Exception
     {
-
+        // Create GUI
         final JFrame frame = new JFrame("Lift/Arm Sim");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -193,8 +207,12 @@ public class LiftArmDisplay implements Runnable
         frame.setBounds(10, 10, 800, 800);
         frame.setVisible(true);
 
+        // Start worker which reads network table and updates display
         Thread worker = new Thread(new LiftArmDisplay());
         worker.setDaemon(true);
         worker.start();
+
+        // We actually don't quit when leaving main()
+        // because the GUI and worker keep running...
     }
 }
