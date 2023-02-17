@@ -34,14 +34,15 @@ public class LiftArmDisplay implements Runnable
 {
     private static class RobotDisplay extends JPanel
     {
-        private double lift_extension = 0.0, arm_angle = -90.0;
+        private double lift_extension = 0.0, arm_angle = -90.0, intake_angle = 90.0;
         private boolean arm_extended = false;
 
-        public void set(double lift_extension, double arm_angle,  boolean arm_extended)
+        public void set(double lift_extension, double arm_angle,  boolean arm_extended, double intake_angle)
         {
             this.lift_extension = lift_extension;
             this.arm_angle = arm_angle;
             this.arm_extended = arm_extended;
+            this.intake_angle = intake_angle;
             repaint();
         }
 
@@ -72,21 +73,26 @@ public class LiftArmDisplay implements Runnable
 
             double lift_angle = Math.toRadians(60.0);
             double lift_length = 0.8 + lift_extension;
+            int robot_edge = base_x + (int) (0.8 * Math.cos(lift_angle) * pixel_per_meter);
             int lift_top_x = base_x + (int) (lift_length * Math.cos(lift_angle) * pixel_per_meter);
             int lift_top_y = base_y - (int) (lift_length * Math.sin(lift_angle) * pixel_per_meter);
-
             g2.setColor(Color.BLUE);
             g2.setStroke(new BasicStroke(10));
             g.drawLine(base_x, base_y, lift_top_x, lift_top_y);
 
+            double intake_length = 0.2;
+            int intake_x = robot_edge    + (int) (Math.cos(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
+            int intake_y = bounds.height - (int) (Math.sin(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
+            g2.setColor(Color.GREEN);
+            g.drawLine(robot_edge, bounds.height, intake_x, intake_y);
+
             double arm_length = arm_extended ? 0.5 : 0.3;
             int arm_x = lift_top_x + (int) (Math.cos(Math.toRadians(arm_angle)) * arm_length * pixel_per_meter);
             int arm_y = lift_top_y - (int) (Math.sin(Math.toRadians(arm_angle)) * arm_length * pixel_per_meter);
-
             g2.setColor(Color.RED);
             g.drawLine(lift_top_x, lift_top_y, arm_x, arm_y);
 
-            double grab_size = 0.2 * pixel_per_meter;
+            double grab_size = 0.15 * pixel_per_meter;
             g2.setColor(Color.YELLOW);
             g.drawLine(arm_x, arm_y,
                        (int) (arm_x + rotate_x(grab_size, -grab_size/2, -arm_angle)),
@@ -94,6 +100,24 @@ public class LiftArmDisplay implements Runnable
             g.drawLine(arm_x, arm_y,
                        (int) (arm_x + rotate_x(grab_size, +grab_size/2, -arm_angle)),
                        (int) (arm_y + rotate_y(grab_size, +grab_size/2, -arm_angle)));
+
+            if (intake_angle > 90.0)
+            {
+                g2.setColor(Color.DARK_GRAY);
+                int node_width = (int)(0.25 * pixel_per_meter);
+                int level1 = (int)(0.25 * pixel_per_meter);
+                int level2 = (int)(0.50 * pixel_per_meter);
+                g.drawRect(robot_edge, bounds.height-2, node_width, 2);
+                g.drawRect(robot_edge + node_width, bounds.height-level1, node_width, level1);
+                g.drawRect(robot_edge + 2*node_width, bounds.height-level2, node_width, level2);
+    
+                g2.setColor(Color.GRAY);
+                int rod_height = node_width;
+                int rod_x = robot_edge + node_width + node_width/2;
+                g2.drawLine(rod_x, bounds.height-level1, rod_x, bounds.height-level1-rod_height);
+                rod_x = robot_edge + 2*node_width + node_width/2;
+                g2.drawLine(rod_x, bounds.height-level2, rod_x, bounds.height-level2-rod_height);
+            }
         }
     };
 
@@ -119,6 +143,7 @@ public class LiftArmDisplay implements Runnable
             DoubleSubscriber nt_lift = table.getDoubleTopic("Lift Height").subscribe(0.0);
             DoubleSubscriber nt_arm = table.getDoubleTopic("Arm Angle").subscribe(0.0);
             BooleanSubscriber nt_ext = table.getBooleanTopic("Arm Extended").subscribe(false);
+            DoubleSubscriber nt_intake = table.getDoubleTopic("Intake Angle").subscribe(90.0);
 
             inst.startClient4("example client");
             inst.setServer("localhost"); // where TEAM=190, 294, etc, or use inst.setServer("hostname") or similar
@@ -131,16 +156,18 @@ public class LiftArmDisplay implements Runnable
                 double lift = nt_lift.get();
                 double arm = nt_arm.get();
                 boolean extended = nt_ext.get();
+                double intake = nt_intake.get();
                 // System.out.println("Lift: " + lift + " Arm: " + arm);
 
                 // Must update on UI thread
                 SwingUtilities.invokeAndWait(() ->
                 {
-                    info.setText(String.format("Lift: %5.2f m, Arm %s at %4.1f deg",
+                    info.setText(String.format("Lift: %5.2f m, Arm %s at %4.1f deg, Intake at %4.1f deg",
                                                lift,
                                                extended ? "out" : "in ",
-                                               arm));
-                    display.set(lift, arm, extended);
+                                               arm,
+                                               intake));
+                    display.set(lift, arm, extended, intake);
                 });
             }        
         }
@@ -163,7 +190,7 @@ public class LiftArmDisplay implements Runnable
         info = new JLabel("XXXXXXXXXXXXXXXXXXXXX");
         frame.getContentPane().add(info, BorderLayout.SOUTH);
 
-        frame.setBounds(10, 10, 600, 800);
+        frame.setBounds(10, 10, 800, 800);
         frame.setVisible(true);
 
         Thread worker = new Thread(new LiftArmDisplay());
