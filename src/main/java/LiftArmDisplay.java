@@ -116,7 +116,7 @@ public class LiftArmDisplay implements Runnable
                        (int) (arm_y + rotate_y(grab_size, +grab_size/2, -arm_angle)));
 
             // If intake is out front, pretend we're in front of nodes so draw those
-            if (intake_angle > 90.0)
+            if (intake_angle > 110.0)
             {
                 g2.setColor(Color.DARK_GRAY);
                 int node_start = robot_edge + 10;
