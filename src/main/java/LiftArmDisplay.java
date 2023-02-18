@@ -1,6 +1,7 @@
 
 import edu.wpi.first.networktables.BooleanSubscriber;
 import edu.wpi.first.networktables.DoubleSubscriber;
+import edu.wpi.first.networktables.StringSubscriber;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.NetworkTablesJNI;
@@ -13,6 +14,7 @@ import java.awt.Graphics2D;
 import java.awt.BasicStroke;
 import java.awt.Rectangle;
 
+import javax.swing.BorderFactory;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -158,6 +160,7 @@ public class LiftArmDisplay implements Runnable
 
             NetworkTableInstance inst = NetworkTableInstance.getDefault();
             NetworkTable table = inst.getTable("SmartDashboard");
+            StringSubscriber nt_mode = table.getStringTopic("Mode").subscribe("?");
             DoubleSubscriber nt_lift = table.getDoubleTopic("Lift Height").subscribe(0.0);
             DoubleSubscriber nt_arm = table.getDoubleTopic("Arm Angle").subscribe(0.0);
             BooleanSubscriber nt_ext = table.getBooleanTopic("Arm Extended").subscribe(false);
@@ -179,7 +182,8 @@ public class LiftArmDisplay implements Runnable
                 // Must update display on UI thread
                 SwingUtilities.invokeAndWait(() ->
                 {
-                    info.setText(String.format("Lift: %5.2f m, Arm %s at %4.1f deg, Intake at %4.1f deg",
+                    info.setText(String.format("%s Mode - Lift %5.2f m, Arm %s at %4.1f deg, Intake at %4.1f deg",
+                                               nt_mode.get(),
                                                lift,
                                                extended ? "out" : "in ",
                                                arm,
@@ -204,6 +208,8 @@ public class LiftArmDisplay implements Runnable
         frame.getContentPane().add(display, BorderLayout.CENTER);
 
         info = new JLabel("XXXXXXXXXXXXXXXXXXXXX");
+        info.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(Color.GRAY, 2, true),
+                                                          BorderFactory.createEmptyBorder(5, 5, 5, 5)));
         frame.getContentPane().add(info, BorderLayout.SOUTH);
 
         frame.setBounds(10, 10, 800, 800);
