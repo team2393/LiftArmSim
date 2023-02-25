@@ -92,7 +92,7 @@ public class LiftArmDisplay implements Runnable
             g.drawLine(base_x, base_y, lift_top_x, lift_top_y);
 
             // Draw Intake
-            double intake_length = 0.2;
+            double intake_length = 0.3;
             int intake_x = robot_edge + (int) (Math.cos(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
             int intake_y = base_y     - (int) (Math.sin(Math.toRadians(intake_angle)) * intake_length * pixel_per_meter);
             g2.setColor(Color.GREEN);
